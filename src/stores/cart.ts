@@ -1,0 +1,5 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type { CartItem } from '../types'
+interface CartState { items:CartItem[]; add:(id:string,color:string)=>void; setQuantity:(id:string,color:string,quantity:number)=>void; remove:(id:string,color:string)=>void; replaceProductId:(oldId:string,newId:string)=>void; clear:()=>void }
+export const useCart=create<CartState>()(persist((set)=>({items:[],add:(productId,colorName)=>set(s=>{const old=s.items.find(i=>i.productId===productId&&i.colorName===colorName);return{items:old?s.items.map(i=>i===old?{...i,quantity:i.quantity+1}:i):[...s.items,{productId,colorName,quantity:1}]}}),setQuantity:(productId,colorName,quantity)=>set(s=>({items:quantity<=0?s.items.filter(i=>!(i.productId===productId&&i.colorName===colorName)):s.items.map(i=>i.productId===productId&&i.colorName===colorName?{...i,quantity}:i)})),remove:(productId,colorName)=>set(s=>({items:s.items.filter(i=>!(i.productId===productId&&i.colorName===colorName))})),replaceProductId:(oldId,newId)=>set(s=>({items:s.items.map(i=>i.productId===oldId?{...i,productId:newId}:i)})),clear:()=>set({items:[]})}),{name:'refa-optical-cart'}))

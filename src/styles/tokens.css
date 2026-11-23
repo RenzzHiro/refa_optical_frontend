@@ -1,0 +1,27 @@
+:root {
+  font-family: Inter, "Helvetica Neue", Arial, sans-serif;
+  color: #171717;
+  background: #fff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #171717;
+  --muted: #666;
+  --canvas: #fff;
+  --surface: #f6f5f2;
+  --line: #ddddd9;
+  --accent: #a33b35;
+  --success: #24734b;
+  --warning: #8a5a13;
+  --danger: #b42318;
+  --focus: #1d4ed8;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-control: 10px;
+  --radius-card: 6px;
+  --content: 1600px;
+}
