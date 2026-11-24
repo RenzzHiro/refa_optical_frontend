@@ -2,15 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getLenses } from '../api/lenses'
-import { createOrder, uploadPrescription } from '../api/orders'
+import { createOrder } from '../api/orders'
 import { ApiError } from '../api/client'
 import { useCartProducts } from '../hooks/useCartProducts'
 import { useCart } from '../stores/cart'
 import { useSession } from '../stores/session'
-import type { LensOption, PrescriptionDetails } from '../types'
+import type { LensOption } from '../types'
 import { formatCurrency } from '../utils/format'
 
-const emptyPrescription: PrescriptionDetails = { rightSphere: '', rightCylinder: '', rightAxis: '', leftSphere: '', leftCylinder: '', leftAxis: '', pd: '' }
 const lensTypeNames: Record<string, string> = { minus: 'Minus', anti_radiation: 'Anti radiasi', photochromic: 'Photochromic' }
 const cartKey = (productId: string, colorName: string) => `${productId}:${colorName}`
 
@@ -24,8 +23,6 @@ export default function CheckoutWithLensesPage() {
   const [lensesLoading, setLensesLoading] = useState(true)
   const [lensError, setLensError] = useState('')
   const [selections, setSelections] = useState<Record<string, string>>({})
-  const [file, setFile] = useState<File | null>(null)
-  const [prescription, setPrescription] = useState(emptyPrescription)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [pendingOrderId, setPendingOrderId] = useState(() => sessionStorage.getItem('refa-checkout-order') || '')
@@ -55,23 +52,13 @@ export default function CheckoutWithLensesPage() {
     const lens = lenses.find(option => option.id === selections[cartKey(row.item.productId, row.item.colorName)])
     return sum + ((row.product?.price || 0) + (lens?.price || 0)) * row.item.quantity
   }, 0)
-  const needsPrescription = rows.some(row => row.product?.category === 'minus' || lenses.find(lens => lens.id === selections[cartKey(row.item.productId, row.item.colorName)])?.requiresPrescription)
   const lensesReady = !lensesLoading && !lensError && lenses.length > 0
-
-  function chooseFile(selected?: File) {
-    if (!selected) { setFile(null); return }
-    if (!['image/jpeg', 'image/png', 'application/pdf'].includes(selected.type)) { setError('Unggah resep JPG, PNG, atau PDF.'); return }
-    if (selected.size > 5 * 1024 * 1024) { setError('Ukuran file maksimum 5 MB.'); return }
-    setError(''); setFile(selected)
-  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!rows.length) { navigate('/collections'); return }
     if (!lensesReady) { setError('Pilihan lensa belum tersedia. Hubungi admin toko.'); return }
     if (rows.some(row => !selections[cartKey(row.item.productId, row.item.colorName)])) { setError('Pilih lensa untuk setiap produk.'); return }
-    if (needsPrescription && !file) { setError('Unggah foto resep untuk pilihan kacamata minus.'); return }
-    if (needsPrescription && Object.values(prescription).some(value => !value.trim())) { setError('Lengkapi seluruh detail resep dan jarak pupil (PD).'); return }
     setBusy(true); setError('')
     const form = new FormData(event.currentTarget)
     try {
@@ -83,7 +70,6 @@ export default function CheckoutWithLensesPage() {
         })
         orderId = order.id; sessionStorage.setItem('refa-checkout-order', orderId); setPendingOrderId(orderId)
       }
-      if (needsPrescription && file) await uploadPrescription(orderId, file, prescription)
       clear(); sessionStorage.removeItem('refa-checkout-order'); navigate(`/payment/${orderId}`)
     } catch (cause) { setError(cause instanceof ApiError ? cause.message : 'Pesanan belum dapat dibuat. Periksa koneksi lalu coba lagi.') }
     finally { setBusy(false) }
@@ -111,10 +97,6 @@ export default function CheckoutWithLensesPage() {
         <div className="form-field full"><label htmlFor="checkout-address">Alamat lengkap</label><textarea id="checkout-address" name="address" required autoComplete="street-address" placeholder="Nama jalan, nomor rumah, kecamatan" /></div>
         <div className="form-field"><label htmlFor="checkout-city">Kota/Kabupaten</label><input id="checkout-city" name="city" required autoComplete="address-level2" /></div>
         <div className="form-field"><label htmlFor="checkout-postal">Kode pos</label><input id="checkout-postal" name="postal" required inputMode="numeric" autoComplete="postal-code" /></div></div>
-      {needsPrescription && <section className="checkout-prescription"><h2 className="form-section-title">Resep kacamata</h2><p className="helper-text">Isi resep mata kanan (OD), kiri (OS), dan jarak pupil (PD), lalu unggah foto resep.</p>
-        <div className="form-grid">{([['rightSphere','OD · SPH'],['rightCylinder','OD · CYL'],['rightAxis','OD · Axis'],['leftSphere','OS · SPH'],['leftCylinder','OS · CYL'],['leftAxis','OS · Axis'],['pd','PD (mm)']] as const).map(([key, label]) => <div className="form-field" key={key}><label htmlFor={`rx-${key}`}>{label}</label><input id={`rx-${key}`} type="number" step="0.25" required value={prescription[key]} onChange={event => setPrescription(current => ({ ...current, [key]: event.target.value }))} /></div>)}</div>
-        <div className="form-field"><label htmlFor="prescription">Foto resep</label><div className="upload-box"><strong>Unggah resep Anda</strong><p className="helper-text">Format JPG, PNG, PDF · Maksimum 5 MB.</p><input id="prescription" type="file" accept="image/jpeg,image/png,application/pdf" required onChange={event => chooseFile(event.target.files?.[0])} />{file && <p className="upload-name">File dipilih: {file.name}</p>}</div></div>
-      </section>}
       <div className="notice">Pesanan dibuat oleh server dan pembayaran dilanjutkan melalui Midtrans.</div>{error && <p className="form-error" role="alert">{error}</p>}{pendingOrderId && <p className="helper-text">Pesanan sudah tersimpan. Lengkapi langkah ini untuk melanjutkan.</p>}
       <button className="button button-primary" disabled={busy || !lensesReady}>{busy ? 'Menyiapkan pesanan…' : 'Lanjut ke pembayaran'}</button>
     </form>
