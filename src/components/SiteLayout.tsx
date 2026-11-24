@@ -97,12 +97,7 @@ export default function SiteLayout() {
               sendiri.
             </p>
           </div>
-          <div>
-            <strong>Jelajahi</strong>
-            <Link to="/collections">Semua koleksi</Link>
-            <Link to="/collections?category=minus">Kacamata minus</Link>
-            <Link to="/collections?category=fashion">Kacamata fashion</Link>
-          </div>
+
           <div>
             <strong>Bantuan</strong>
             <Link to="/account/orders">Pesanan saya</Link>
