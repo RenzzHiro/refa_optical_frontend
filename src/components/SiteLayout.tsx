@@ -107,7 +107,6 @@ export default function SiteLayout() {
             <strong>Bantuan</strong>
             <Link to="/account/orders">Pesanan saya</Link>
             <Link to="/account">Akun</Link>
-            <a href="mailto:halo@refaoptical.id">Hubungi kami</a>
           </div>
         </div>
         <div className="footer-bottom">
